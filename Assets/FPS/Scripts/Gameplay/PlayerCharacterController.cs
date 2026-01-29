@@ -121,6 +121,7 @@ namespace Unity.FPS.Gameplay
         PlayerInputHandler m_InputHandler;
         CharacterController m_Controller;
         PlayerWeaponsManager m_WeaponsManager;
+        PlayerSkills m_PlayerSkills;
         Actor m_Actor;
         Vector3 m_GroundNormal;
         Vector3 m_CharacterVelocity;
@@ -129,9 +130,11 @@ namespace Unity.FPS.Gameplay
         float m_CameraVerticalAngle = 0f;
         float m_FootstepDistanceCounter;
         float m_TargetCharacterHeight;
+        int m_JumpsUsed = 0;
 
         const float k_JumpGroundingPreventionTime = 0.2f;
         const float k_GroundCheckDistanceInAir = 0.07f;
+
 
         void Awake()
         {
@@ -168,6 +171,10 @@ namespace Unity.FPS.Gameplay
             // force the crouch state to false when starting
             SetCrouchingState(false, true);
             UpdateCharacterHeight(true);
+
+            m_PlayerSkills = GetComponent<PlayerSkills>();
+            if (m_PlayerSkills == null)
+                m_PlayerSkills = gameObject.AddComponent<PlayerSkills>();
         }
 
         void Update()
@@ -186,6 +193,8 @@ namespace Unity.FPS.Gameplay
             // landing
             if (IsGrounded && !wasGrounded)
             {
+                m_JumpsUsed = 0;
+                
                 // Fall damage
                 float fallSpeed = -Mathf.Min(CharacterVelocity.y, m_LatestImpactSpeed.y);
                 float fallSpeedRatio = (fallSpeed - MinSpeedForFallDamage) /
@@ -228,6 +237,8 @@ namespace Unity.FPS.Gameplay
 
         void GroundCheck()
         {
+            if (IsGrounded)
+                m_JumpsUsed = 0;
             // Make sure that the ground check distance while already in air is very small, to prevent suddenly snapping to ground
             float chosenGroundCheckDistance =
                 IsGrounded ? (m_Controller.skinWidth + GroundCheckDistance) : k_GroundCheckDistanceInAir;
@@ -314,31 +325,6 @@ namespace Unity.FPS.Gameplay
                     CharacterVelocity = Vector3.Lerp(CharacterVelocity, targetVelocity,
                         MovementSharpnessOnGround * Time.deltaTime);
 
-                    // jumping
-                    if (IsGrounded && m_InputHandler.GetJumpInputDown())
-                    {
-                        // force the crouch state to false
-                        if (SetCrouchingState(false, false))
-                        {
-                            // start by canceling out the vertical component of our velocity
-                            CharacterVelocity = new Vector3(CharacterVelocity.x, 0f, CharacterVelocity.z);
-
-                            // then, add the jumpSpeed value upwards
-                            CharacterVelocity += Vector3.up * JumpForce;
-
-                            // play sound
-                            AudioSource.PlayOneShot(JumpSfx);
-
-                            // remember last time we jumped because we need to prevent snapping to ground for a short time
-                            m_LastTimeJumped = Time.time;
-                            HasJumpedThisFrame = true;
-
-                            // Force grounding to false
-                            IsGrounded = false;
-                            m_GroundNormal = Vector3.up;
-                        }
-                    }
-
                     // footsteps sound
                     float chosenFootstepSfxFrequency =
                         (isSprinting ? FootstepSfxFrequencyWhileSprinting : FootstepSfxFrequency);
@@ -366,6 +352,38 @@ namespace Unity.FPS.Gameplay
                     // apply the gravity to the velocity
                     CharacterVelocity += Vector3.down * GravityDownForce * Time.deltaTime;
                 }
+            }
+
+            // jumping
+            void HandleJump()
+            {
+                if (!m_InputHandler.GetJumpInputDown())
+                    return;
+
+                int maxJumps = 1;
+                if (m_PlayerSkills != null && m_PlayerSkills.HasDoubleJump)
+                    maxJumps = 2;
+
+                if (m_JumpsUsed >= maxJumps)
+                    return;
+
+                if (!SetCrouchingState(false, false))
+                    return;
+
+                // cancel vertical velocity and jump
+                CharacterVelocity = new Vector3(CharacterVelocity.x, 0f, CharacterVelocity.z);
+                CharacterVelocity += Vector3.up * JumpForce;
+
+                AudioSource.PlayOneShot(JumpSfx);
+
+                m_LastTimeJumped = Time.time;
+                HasJumpedThisFrame = true;
+
+                m_JumpsUsed++;
+
+                // prevent snap to ground
+                IsGrounded = false;
+                m_GroundNormal = Vector3.up;
             }
 
             // apply the final calculated velocity value as a character movement

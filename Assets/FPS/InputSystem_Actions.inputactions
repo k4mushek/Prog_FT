@@ -1,4 +1,5 @@
 {
+    "version": 1,
     "name": "InputSystem_Actions",
     "maps": [
         {
@@ -121,6 +122,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": true
+                },
+                {
+                    "name": "Dash",
+                    "type": "Button",
+                    "id": "6f53954c-acf7-4a59-9473-345b61e31c7a",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -662,6 +672,17 @@
                     "action": "NextWeapon",
                     "isComposite": false,
                     "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "fa00a801-aa1d-462a-863d-0d6c90f053fd",
+                    "path": "<Keyboard>/leftAlt",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Dash",
+                    "isComposite": false,
+                    "isPartOfComposite": false
                 }
             ]
         },
@@ -763,6 +784,15 @@
                     "name": "Menu",
                     "type": "Button",
                     "id": "75ec424f-02ba-4d04-926e-431c5c0fbf64",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Obtain Skill",
+                    "type": "Button",
+                    "id": "4ce70eb6-c8bc-4f8e-a43e-8a6e2b2e0ad9",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -1229,6 +1259,17 @@
                     "processors": "",
                     "groups": ";Gamepad",
                     "action": "Menu",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "02600119-99a0-4d4f-ba85-a782ab72200d",
+                    "path": "<Keyboard>/t",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard&Mouse",
+                    "action": "Obtain Skill",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

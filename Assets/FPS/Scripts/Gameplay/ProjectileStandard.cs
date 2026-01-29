@@ -222,20 +222,28 @@ namespace Unity.FPS.Gameplay
 
         void OnHit(Vector3 point, Vector3 normal, Collider collider)
         {
-            // damage
+            // damage (with optional player multiplier)
+            float finalDamage = Damage;
+
+            if (m_ProjectileBase != null && m_ProjectileBase.Owner != null)
+            {
+                // Only apply multiplier if the shooter has it (player rewards)
+                var dmgMod = m_ProjectileBase.Owner.GetComponent<PlayerDamageMod>();
+                if (dmgMod != null)
+                    finalDamage *= dmgMod.damageMultiplier;
+            }
+
             if (AreaOfDamage)
             {
-                // area damage
-                AreaOfDamage.InflictDamageInArea(Damage, point, HittableLayers, k_TriggerInteraction,
+                AreaOfDamage.InflictDamageInArea(finalDamage, point, HittableLayers, k_TriggerInteraction,
                     m_ProjectileBase.Owner);
             }
             else
             {
-                // point damage
                 Damageable damageable = collider.GetComponent<Damageable>();
                 if (damageable)
                 {
-                    damageable.InflictDamage(Damage, false, m_ProjectileBase.Owner);
+                    damageable.InflictDamage(finalDamage, false, m_ProjectileBase.Owner);
                 }
             }
 

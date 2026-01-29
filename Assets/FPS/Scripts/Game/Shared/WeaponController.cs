@@ -148,6 +148,8 @@ namespace Unity.FPS.Game
         public float CurrentCharge { get; private set; }
         public Vector3 MuzzleWorldVelocity { get; private set; }
 
+        PlayerSkills m_OwnerSkills;
+
         public float GetAmmoNeededToShoot() =>
             (ShootType != WeaponShootType.Charge ? 1f : Mathf.Max(1f, AmmoUsedOnStartCharge)) /
             (MaxAmmo * BulletsPerShot);
@@ -197,7 +199,14 @@ namespace Unity.FPS.Game
         }
 
         public void AddCarriablePhysicalBullets(int count) => m_CarriedPhysicalBullets = Mathf.Max(m_CarriedPhysicalBullets + count, MaxAmmo);
+        bool HasNoOverheat()
+        {
+            if (HasPhysicalBullets) return false; 
+            if (Owner == null) return false;
 
+            var skills = Owner.GetComponent<Unity.FPS.Game.PlayerSkills>();
+            return skills != null && skills.HasNoOverheat;
+        }
         void ShootShell()
         {
             Rigidbody nextShell = m_PhysicalAmmoPool.Dequeue();
@@ -249,6 +258,12 @@ namespace Unity.FPS.Game
 
         void UpdateAmmo()
         {
+            if (HasNoOverheat())
+            {
+                IsCooling = false;
+                CurrentAmmoRatio = 1f;
+                return;
+            }
             if (AutomaticReload && m_LastTimeShot + AmmoReloadDelay < Time.time && m_CurrentAmmo < MaxAmmo && !IsCharging)
             {
                 // reloads weapon over time
@@ -344,6 +359,7 @@ namespace Unity.FPS.Game
 
         public void UseAmmo(float amount)
         {
+
             m_CurrentAmmo = Mathf.Clamp(m_CurrentAmmo - amount, 0f, MaxAmmo);
             m_CarriedPhysicalBullets -= Mathf.RoundToInt(amount);
             m_CarriedPhysicalBullets = Mathf.Clamp(m_CarriedPhysicalBullets, 0, MaxAmmo);
@@ -392,11 +408,15 @@ namespace Unity.FPS.Game
 
         bool TryShoot()
         {
-            if (m_CurrentAmmo >= 1f
-                && m_LastTimeShot + DelayBetweenShots < Time.time)
+            bool noOverheat = HasNoOverheat();
+
+            if ((noOverheat || m_CurrentAmmo >= 1f) &&
+                m_LastTimeShot + DelayBetweenShots < Time.time)
             {
                 HandleShoot();
-                m_CurrentAmmo -= 1f;
+
+                if (!noOverheat)
+                    m_CurrentAmmo -= 1f;
 
                 return true;
             }
